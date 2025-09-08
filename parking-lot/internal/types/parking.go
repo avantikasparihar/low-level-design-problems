@@ -1,6 +1,9 @@
 package types
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type ParkingLot struct {
 	Floors   []*ParkingFloor
@@ -25,8 +28,10 @@ func (pl *ParkingLot) GetFloor(no int) *ParkingFloor {
 	return nil
 }
 
-func NewParkingLot() *ParkingLot {
-	return &ParkingLot{}
+func NewParkingLot(floors []*ParkingFloor) *ParkingLot {
+	return &ParkingLot{
+		Floors: floors,
+	}
 }
 
 type ParkingFloor struct {
@@ -43,15 +48,26 @@ type VehicleParking struct {
 	Bill      *ParkingBill
 }
 
+func (vp *VehicleParking) IsBillPaid() bool {
+	if vp.Bill == nil {
+		return false
+	}
+	return vp.Bill.Paid
+}
+
 type Capacity struct {
 	Total     map[VehicleType]int
 	Available map[VehicleType]int
 }
 
-func (pf *ParkingFloor) BookSpot(vt VehicleType) {
-	if _, ok := pf.Capacity.Available[vt]; ok {
+func (pf *ParkingFloor) BookSpot(vt VehicleType) error {
+	if count, ok := pf.Capacity.Available[vt]; ok {
+		if count <= 0 {
+			return fmt.Errorf("%s is fully booked", vt)
+		}
 		pf.Capacity.Available[vt] -= 1
 	}
+	return nil
 }
 
 func (pf *ParkingFloor) FreeSpot(vt VehicleType) {

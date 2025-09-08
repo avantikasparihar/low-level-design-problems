@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const ratePerHr = 30
+
 type BillingManager interface {
 	GetBill(parkingID string) *types.ParkingBill
 	PayBill(parkingID string)
@@ -15,18 +17,25 @@ type billingManager struct {
 }
 
 func (b billingManager) GetBill(parkingID string) *types.ParkingBill {
-	parking := b.parkingLot.GetParking(parkingID)
-	elapsedTime := time.Since(parking.StartTime)
-	return &types.ParkingBill{
-		Amount: elapsedTime.Hours() * 30,
-	}
+	return b.getBill(parkingID)
 }
 
 func (b billingManager) PayBill(parkingID string) {
-	parking := b.parkingLot.GetParking(parkingID)
-	parking.Bill.Pay()
+	b.getBill(parkingID).Pay()
 }
 
-func NewBillingManager() BillingManager {
-	return &billingManager{}
+func (b billingManager) getBill(parkingID string) *types.ParkingBill {
+	parking := b.parkingLot.GetParking(parkingID)
+	elapsedTime := time.Since(parking.StartTime)
+	bill := &types.ParkingBill{
+		Amount: elapsedTime.Hours() * ratePerHr,
+	}
+	parking.Bill = bill
+	return bill
+}
+
+func NewBillingManager(parkingLot *types.ParkingLot) BillingManager {
+	return &billingManager{
+		parkingLot: parkingLot,
+	}
 }
