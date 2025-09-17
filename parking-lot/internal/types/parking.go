@@ -1,36 +1,59 @@
 package types
 
 import (
+	"errors"
 	"fmt"
+	"sync"
 	"time"
 )
 
 type ParkingLot struct {
-	Floors   []*ParkingFloor
-	Parkings []*VehicleParking
-}
-
-func (pl *ParkingLot) GetParking(id string) *VehicleParking {
-	for _, parking := range pl.Parkings {
-		if parking.ID == id {
-			return parking
-		}
-	}
-	return nil
+	mut      sync.Mutex
+	Floors   map[int]*ParkingFloor
+	Parkings map[string]*VehicleParking
 }
 
 func (pl *ParkingLot) GetFloor(no int) *ParkingFloor {
-	for _, floor := range pl.Floors {
-		if floor.FloorNo == no {
-			return floor
-		}
+	pl.mut.Lock()
+	defer pl.mut.Unlock()
+	if floor, ok := pl.Floors[no]; ok {
+		return floor
 	}
 	return nil
 }
 
-func NewParkingLot(floors []*ParkingFloor) *ParkingLot {
+func (pl *ParkingLot) UpdateFloor(floor *ParkingFloor) {
+	pl.mut.Lock()
+	defer pl.mut.Unlock()
+	pl.Floors[floor.FloorNo] = floor
+}
+
+func (pl *ParkingLot) CreateParking(parking *VehicleParking) {
+	pl.mut.Lock()
+	defer pl.mut.Unlock()
+	pl.Parkings[parking.ID] = parking
+}
+
+func (pl *ParkingLot) GetParking(id string) *VehicleParking {
+	return pl.Parkings[id]
+}
+
+func (pl *ParkingLot) UpdateParking(parking *VehicleParking) {
+	pl.Parkings[parking.ID] = parking
+}
+
+func (pl *ParkingLot) DeleteParking(id string) {
+	pl.mut.Lock()
+	defer pl.mut.Unlock()
+	if pl.Parkings[id] != nil {
+		pl.Parkings[id].EndTime = time.Now()
+	}
+}
+
+func NewParkingLot(floors map[int]*ParkingFloor) *ParkingLot {
 	return &ParkingLot{
-		Floors: floors,
+		Floors:   floors,
+		Parkings: make(map[string]*VehicleParking),
 	}
 }
 
@@ -61,12 +84,14 @@ type Capacity struct {
 }
 
 func (pf *ParkingFloor) BookSpot(vt VehicleType) error {
-	if count, ok := pf.Capacity.Available[vt]; ok {
-		if count <= 0 {
-			return fmt.Errorf("%s is fully booked", vt)
-		}
-		pf.Capacity.Available[vt] -= 1
+	count, found := pf.Capacity.Available[vt]
+	if !found {
+		return errors.New(fmt.Sprintf("Vehicle type %s not available", vt))
 	}
+	if count <= 0 {
+		return fmt.Errorf("%s is fully booked", vt)
+	}
+	pf.Capacity.Available[vt] -= 1
 	return nil
 }
 

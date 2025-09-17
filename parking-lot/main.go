@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/avantikasparihar/low-level-design-problems/parking-lot/internal"
 	"github.com/avantikasparihar/low-level-design-problems/parking-lot/internal/types"
+	"sync"
 	"time"
 )
 
@@ -55,45 +56,43 @@ var (
 func main() {
 	InitParkingLot()
 
-	// display details for floor 1
+	// 1. display details for floor 1
 	displayFloorDetails(1)
 
-	// create a parking of type small-car
-	vehicle := types.Vehicle{
-		Type:             types.SmallCar,
-		RegisteredNumber: "KA01 LN9999",
-	}
-	parking, err := parkingMgr.CreateParking(vehicle, 0)
-	if err != nil {
-		fmt.Printf("failed to park: %v", err)
-	}
-	fmt.Printf("parking created: %+v\n", parking)
+	// 2. create a parking of type small-car on floor 0
+	id := createSingleParking()
 
-	// display details for floor 0
+	// 3. display details for floor 0
 	displayFloorDetails(0)
 
 	time.Sleep(5 * time.Second)
 
-	// pay bill for parking
-	bill := billingMgr.GetBill(parking.ID)
-	fmt.Printf("bill created for parking %s: %+v\n", parking.ID, bill)
-	billingMgr.PayBill(parking.ID)
-	fmt.Printf("bill paid for parking: %s\n", parking.ID)
+	// 4. pay bill for parking
+	bill := billingMgr.GetBill(id)
+	fmt.Printf("bill created for parking %s: %+v\n", id, bill)
+	billingMgr.PayBill(id)
+	fmt.Printf("bill paid for parking: %s\n", id)
 
-	// exit parking
-	err = parkingMgr.ExitParking(parking.ID)
+	// 5. exit parking
+	err := parkingMgr.ExitParking(id)
 	if err != nil {
 		fmt.Printf("failed to exit parking: %v", err)
 	}
-	fmt.Printf("parking exited: %+v\n", parking)
+	fmt.Printf("parking exited: %s\n", id)
 
-	// display details for floor 0
+	// 6. display details for floor 0
+	displayFloorDetails(0)
+
+	// 7. create multiple parkings concurrently
+	_ = createMultipleParking()
+
+	// 8. display details for floor 0
 	displayFloorDetails(0)
 }
 
 func InitParkingLot() {
-	floors := []*types.ParkingFloor{
-		{
+	floors := map[int]*types.ParkingFloor{
+		0: {
 			FloorNo: 0,
 			Capacity: types.Capacity{
 				Total: map[types.VehicleType]int{
@@ -108,7 +107,7 @@ func InitParkingLot() {
 				},
 			},
 		},
-		{
+		1: {
 			FloorNo: 1,
 			Capacity: types.Capacity{
 				Total: map[types.VehicleType]int{
@@ -123,7 +122,7 @@ func InitParkingLot() {
 				},
 			},
 		},
-		{
+		2: {
 			FloorNo:  2,
 			Capacity: types.Capacity{},
 		},
@@ -139,4 +138,36 @@ func displayFloorDetails(floorNo int) {
 	for vt, count := range floor.Capacity.Total {
 		fmt.Printf("type: %s, total: %d, available: %d\n", vt, count, floor.Capacity.Available[vt])
 	}
+}
+
+func createSingleParking() string {
+	vehicle := types.Vehicle{
+		Type:             types.SmallCar,
+		RegisteredNumber: "KA01 LN9999",
+	}
+	parking, err := parkingMgr.CreateParking(vehicle, 0)
+	if err != nil {
+		fmt.Printf("failed to park: %v", err)
+		return ""
+	}
+	fmt.Printf("parking created: %+v\n", parking)
+	return parking.ID
+}
+
+func createMultipleParking() []string {
+	var (
+		cnt = 11
+		ids []string
+	)
+	var wg sync.WaitGroup
+	for i := 0; i < cnt; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			id := createSingleParking()
+			ids = append(ids, id)
+		}()
+	}
+	wg.Wait()
+	return ids
 }

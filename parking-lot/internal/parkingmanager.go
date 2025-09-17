@@ -18,27 +18,24 @@ type parkingMgr struct {
 	parkingLot *types.ParkingLot
 }
 
-func (p parkingMgr) CreateParking(v types.Vehicle, floorNo int) (*types.VehicleParking, error) {
-	for _, floor := range p.parkingLot.Floors {
-		if floor.FloorNo == floorNo {
-			err := floor.BookSpot(v.Type)
-			if err != nil {
-				return nil, err
-			}
-			break
-		}
+func (p *parkingMgr) CreateParking(v types.Vehicle, floorNo int) (*types.VehicleParking, error) {
+	floor := p.parkingLot.GetFloor(floorNo)
+	err := floor.BookSpot(v.Type)
+	if err != nil {
+		return nil, err
 	}
-	vp := &types.VehicleParking{
+	p.parkingLot.UpdateFloor(floor)
+	newParking := &types.VehicleParking{
 		ID:        fmt.Sprintf("id-%d", rand.IntN(100)),
 		StartTime: time.Now(),
 		Vehicle:   v,
 		FloorNo:   floorNo,
 	}
-	p.parkingLot.Parkings = append(p.parkingLot.Parkings, vp)
-	return vp, nil
+	p.parkingLot.CreateParking(newParking)
+	return newParking, nil
 }
 
-func (p parkingMgr) GetVacancyByVehicleType(vt types.VehicleType) int {
+func (p *parkingMgr) GetVacancyByVehicleType(vt types.VehicleType) int {
 	var res = 0
 	for _, floor := range p.parkingLot.Floors {
 		if count, ok := floor.Capacity.Available[vt]; ok {
@@ -48,27 +45,23 @@ func (p parkingMgr) GetVacancyByVehicleType(vt types.VehicleType) int {
 	return res
 }
 
-func (p parkingMgr) GetVacancyByFloor(floorNo int) map[types.VehicleType]int {
-	for _, floor := range p.parkingLot.Floors {
-		if floor.FloorNo == floorNo {
-			return floor.Capacity.Available
-		}
+func (p *parkingMgr) GetVacancyByFloor(floorNo int) map[types.VehicleType]int {
+	floor := p.parkingLot.GetFloor(floorNo)
+	if floor != nil {
+		return floor.Capacity.Available
 	}
 	return nil
 }
 
-func (p parkingMgr) ExitParking(parkingID string) error {
-	for i, parking := range p.parkingLot.Parkings {
-		if parking.ID == parkingID {
-			if !parking.IsBillPaid() {
-				return fmt.Errorf("bill not paid for parking %s", parkingID)
-			}
-			p.parkingLot.Parkings[i].EndTime = time.Now()
-			floor := p.parkingLot.GetFloor(parking.FloorNo)
-			floor.FreeSpot(parking.Vehicle.Type)
-			break
-		}
+func (p *parkingMgr) ExitParking(parkingID string) error {
+	parking := p.parkingLot.GetParking(parkingID)
+	if !parking.IsBillPaid() {
+		return fmt.Errorf("bill not paid for parking %s", parkingID)
 	}
+	p.parkingLot.DeleteParking(parkingID)
+	floor := p.parkingLot.GetFloor(parking.FloorNo)
+	floor.FreeSpot(parking.Vehicle.Type)
+	p.parkingLot.UpdateFloor(floor)
 	return nil
 }
 
