@@ -1,5 +1,5 @@
 package capacityvalidator
 
 type CapacityValidator interface {
-	Validate() bool
+	Validate(elevatorID int) bool
 }
