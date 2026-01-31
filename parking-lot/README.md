@@ -1,6 +1,6 @@
 ### Requirements:
 
-1. The parking lot should have multiple floors where customers can park their cars. :white_check_mark:
+1. The parking lot should have multiple floors where customers can park their cars. 
 2. The parking lot should have multiple entry and exit points.
 3. Customers can collect a parking ticket from the entry points and can pay the parking fee at the exit points on their way out.
 4. Customers can pay the tickets at the automated exit panel or to the parking attendant.
