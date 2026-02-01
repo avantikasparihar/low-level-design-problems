@@ -34,7 +34,7 @@ func NewGame(playerName1, playerName2 string) *Game {
 
 func (g *Game) Move(playerId int, column int) (GameState, string, error) {
 	// impl logic to orchestrate the game
-	err := g.Board.DropBall(column)
+	err := g.Board.DropBall(column, playerId)
 	if err != nil {
 		return "", "", err
 	}

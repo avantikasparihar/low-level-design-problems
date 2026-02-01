@@ -38,6 +38,12 @@ func main() {
 	game = NewGame(playerName1, playerName2)
 	move(1, 1)
 	move(2, 2)
+	move(1, 1)
+	move(2, 3)
+	move(1, 1)
+	move(2, 4)
+	move(1, 2)
+	move(2, 5)
 }
 
 func move(player, col int) {
