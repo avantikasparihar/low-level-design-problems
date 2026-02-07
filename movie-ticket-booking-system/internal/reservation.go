@@ -29,6 +29,7 @@ func (r resMgr) CreateReservation(req CreateReservationReq) Reservation {
 	}
 	r.resList[id] = res
 	// todo block seats in theatre hall
+	showMgr.showList[req.MovieShowId].BlockCapacity(req.Seats)
 
 	return res
 }

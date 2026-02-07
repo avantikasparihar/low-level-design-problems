@@ -61,7 +61,7 @@ Interfaces:
 
 func main() {
 	movieBrowser := NewMovieBrowser()
-	showMgr := NewMovieShowManager()
+	showMgr := GetMovieShowManager()
 	resMgr := NewReservationManager()
 
 	movList := movieBrowser.ListMovies()

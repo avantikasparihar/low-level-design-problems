@@ -1,5 +1,9 @@
 package internal
 
+import "sync"
+
+var showMgr *showManager
+
 type Theatre struct {
 	id         int
 	name       string
@@ -23,6 +27,17 @@ type MovieShow struct {
 	time     string
 	hall     int
 	capacity [][]int
+	mut      sync.Mutex
+}
+
+func (ms *MovieShow) BlockCapacity(seats [][]int) {
+	ms.mut.Lock()
+	defer ms.mut.Unlock()
+
+	for _, s := range seats {
+		// block seat
+		ms.capacity[s[0]][s[1]] = 1
+	}
 }
 
 type AddMovieShowReq struct {
@@ -37,13 +52,13 @@ type MovieShowManager interface {
 	RemoveMovieShow(id int)
 }
 
-type showMgr struct {
-	showList map[int]MovieShow
+type showManager struct {
+	showList map[int]*MovieShow
 }
 
-func (s showMgr) AddMovieShow(req AddMovieShowReq) MovieShow {
+func (s showManager) AddMovieShow(req AddMovieShowReq) MovieShow {
 	id := len(s.showList) + 1
-	show := MovieShow{
+	show := &MovieShow{
 		Id:      id,
 		movie:   req.MovieId,
 		theatre: req.TheatreId,
@@ -52,16 +67,20 @@ func (s showMgr) AddMovieShow(req AddMovieShowReq) MovieShow {
 	}
 	s.showList[id] = show
 
-	return show
+	return *show
 }
 
-func (s showMgr) RemoveMovieShow(id int) {
+func (s showManager) RemoveMovieShow(id int) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func NewMovieShowManager() MovieShowManager {
-	return &showMgr{
-		showList: make(map[int]MovieShow),
+func GetMovieShowManager() MovieShowManager {
+	if showMgr != nil {
+		return showMgr
 	}
+	showMgr = &showManager{
+		showList: make(map[int]*MovieShow),
+	}
+	return showMgr
 }
