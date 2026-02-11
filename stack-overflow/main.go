@@ -5,4 +5,5 @@ import . "github.com/avantikasparihar/low-level-design-problems/stack-overflow/i
 func main() {
 	PostsMgr.CreatePost()
 	CommentsMgr.AddComment()
+	CommentsMgr.ReplyComment()
 }

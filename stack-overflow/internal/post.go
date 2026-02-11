@@ -2,6 +2,7 @@ package internal
 
 var PostsMgr PostsManager
 
+// todo: implement mutex for upvotes, downvotes and comments for concurrent accesss
 type Post struct {
 	Id        int
 	Title     string
